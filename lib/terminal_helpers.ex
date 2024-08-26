@@ -19,9 +19,4 @@ defmodule TerminalHelpers do
 
     styled_str <> IO.ANSI.reset()
   end
-
-  def prompt(str) do
-    input = IO.gets(blink_slow() <> str)
-    input
-  end
 end
