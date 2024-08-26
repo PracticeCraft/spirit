@@ -2,6 +2,7 @@ defmodule Spirit do
   @moduledoc """
   Documentation for `Spirit`.
   """
+  import TerminalHelpers
 
   @doc """
   Hello world.
@@ -13,6 +14,11 @@ defmodule Spirit do
 
   """
   def hello do
-    :world
+    IO.puts("")
+    IO.puts(style("Welcome to Spirit! 💧", [:fg_cyan, :bold]))
+    IO.puts(style("\nPress enter to continue", [:faint]))
+    IO.gets("")
+
+    :bye
   end
 end
