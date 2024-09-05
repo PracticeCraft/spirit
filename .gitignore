@@ -24,3 +24,8 @@ spirit-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Generated modules and tests
+# Feel free to remove these in your own fork
+test/spirit/
+lib/spirit/
