@@ -32,12 +32,6 @@ defmodule Mix.Tasks.Spirit.Intro do
   https://github.com/waseem-medhat/spirit/issues
   """
 
-  @doc """
-  Get started with Spirit
-
-  This is an interactive introduction to Spirit and the workflow of solving the
-  exercises.
-  """
   def run(_) do
     IO.puts(@message)
   end
