@@ -1,27 +1,45 @@
 defmodule Mix.Tasks.Spirit.Gen do
   use Mix.Task
 
-  @base_url "https://raw.githubusercontent.com/waseem-medhat/spirit-exercise-bank/main"
+  @base_url "https://raw.githubusercontent.com/waseem-medhat/spirit-exercises/main"
 
   @chapters %{
     "Basic Types" => "basic_types"
   }
 
-  def get_files(chapter_name) do
-    chapter_slug = @chapters[chapter_name]
-    exercises_url = "#{@base_url}/#{chapter_slug}/exercises.ex"
-    tests_url = "#{@base_url}/#{chapter_slug}/tests.ex"
+  def download_file!(chapter_slug, file_type) do
+    {file_url, download_path} =
+      case file_type do
+        :exercises ->
+          url = "#{@base_url}/#{chapter_slug}/exercises.ex"
+          path = "lib/spirit/#{chapter_slug}.ex"
+          {url, path}
 
-    HTTPoison.start()
-    %{body: exercises_file} = HTTPoison.get!(exercises_url)
-    %{body: tests_file} = HTTPoison.get!(tests_url)
+        :tests ->
+          url = "#{@base_url}/#{chapter_slug}/tests.ex"
+          path = "test/spirit/#{chapter_slug}.exs"
+          {url, path}
+      end
 
-    {exercises_file, tests_file}
+    IO.puts("Downloading file #{file_url}")
+
+    case HTTPoison.get!(file_url) do
+      %HTTPoison.Response{status_code: 200, body: file} ->
+        File.write!(download_path, file)
+        IO.puts("Saved at #{download_path}\n")
+
+      %HTTPoison.Response{status_code: code} ->
+        raise("Error downloading file, status code: #{code}")
+    end
   end
 
   def run([chapter_name]) do
-    {ex, ts} = get_files(chapter_name)
-    IO.puts(ex)
-    IO.puts(ts)
+    HTTPoison.start()
+    chapter_slug = @chapters[chapter_name]
+
+    download_file!(chapter_slug, :exercises)
+    download_file!(chapter_slug, :tests)
+
+    IO.puts("'#{chapter_name}' exercises successfully set up. Happy coding!")
   end
 end
