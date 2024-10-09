@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Spirit.Gen do
   use Mix.Task
 
-  @base_url "https://raw.githubusercontent.com/waseem-medhat/spirit-exercises/main"
+  @base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
 
   @chapters %{
     "Basic Types" => "basic_types"
@@ -41,5 +41,17 @@ defmodule Mix.Tasks.Spirit.Gen do
     download_file!(chapter_slug, :tests)
 
     IO.puts("'#{chapter_name}' exercises successfully set up. Happy coding!")
+  end
+
+  defp fetch_dirs!(path \\ @base_url) do
+    HTTPoison.get!(path)
+    |> case do
+      %HTTPoison.Response{status_code: 200, body: body} ->
+        Jason.decode!(body)
+        |> Enum.filter(fn %{"type" => type} -> type == "dir" end)
+
+      req ->
+        raise("Unable to fetch from #{req}")
+    end
   end
 end
