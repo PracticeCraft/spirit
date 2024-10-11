@@ -1,7 +1,5 @@
 defmodule MixHelpers do
-  @base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
-
-  def fetch_repo_contents(path \\ @base_url) do
+  def fetch_repo_contents(path) do
     Req.get!(path).body
   end
 
@@ -13,18 +11,12 @@ defmodule MixHelpers do
     Req.get!(path).body
   end
 
-  # def write_file()
+  def fetch_file(%{"url" => url} = file_info) do
+    Req.get!(url).body
+    |> IO.inspect()
 
-  def testing() do
-    %{"url" => url} =
-      fetch_repo_contents()
-      |> get_dirs()
-      |> Enum.at(0)
-
-    fetch_dir_contents(url)
-    |> Enum.map(fn %{"download_url" => download_url} ->
-      Req.get!(download_url).body
-      |> IO.inspect()
-    end)
+    IO.inspect(file_info)
   end
+
+  # def write_file()
 end

@@ -3,81 +3,86 @@ defmodule Mix.Tasks.Spirit.Gen do
 
   @base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
 
-  @chapters %{
-    "Basic Types" => "basic_types"
-  }
+  def run(args) do
+    {opts, remaining_args, _} =
+      OptionParser.parse(args,
+        switches: [
+          path: :string
+        ]
+      )
 
-  # def download_file!(chapter_slug, file_type) do
-  #   {file_url, download_path} =
-  #     case file_type do
-  #       :exercises ->
-  #         url = "#{@base_url}/#{chapter_slug}/exercises.ex"
-  #         path = "lib/spirit/#{chapter_slug}.ex"
-  #         {url, path}
+    path = opts[:path] || @base_url
 
-  #       :tests ->
-  #         url = "#{@base_url}/#{chapter_slug}/tests.ex"
-  #         path = "test/spirit/#{chapter_slug}.exs"
-  #         {url, path}
-  #     end
-
-  #   IO.puts("Downloading file #{file_url}")
-
-  #   case HTTPoison.get!(file_url) do
-  #     %HTTPoison.Response{status_code: 200, body: file} ->
-  #       File.write!(download_path, file)
-  #       IO.puts("Saved at #{download_path}\n")
-
-  #     %HTTPoison.Response{status_code: code} ->
-  #       raise("Error downloading file, status code: #{code}")
-  #   end
-  # end
-
-  def run([chapter_name]) do
-    startup_sequence()
-    # HTTPoison.start()
-    # chapter_slug = @chapters[chapter_name]
-
-    # download_file!(chapter_slug, :exercises)
-    # download_file!(chapter_slug, :tests)
-
-    # IO.puts("'#{chapter_name}' exercises successfully set up. Happy coding!")
-
-    IO.puts("Still got work to do, but the mix task works")
+    handle_args(path, remaining_args)
   end
 
-  def run([]) do
+  # If no args given, fetch options and kk
+  defp handle_args(path, []) do
     startup_sequence()
-    Mix.Shell.IO.info("#{TerminalHelpers.style("*** Attention", [:bold, :fg_cyan])}")
 
-    Mix.Shell.IO.info(
-      "Spirit Gen needs to run with one string arguement for the exercise to download"
-    )
+    repo_contents =
+      MixHelpers.fetch_repo_contents(path)
+      |> MixHelpers.get_dirs()
 
-    Mix.Shell.IO.info("Each string argument should be wrapped in quotes, such as \"Basic Types\"")
-    Mix.Shell.IO.info("")
-    Mix.Shell.IO.info("Example: \"Basic Types\"")
+    print_options(repo_contents)
+  end
 
-    Mix.Shell.IO.info("")
+  defp handle_args(path, [arg]) do
+    startup_sequence()
+
+    repo_contents =
+      MixHelpers.fetch_repo_contents(path)
+      |> MixHelpers.get_dirs()
+
+    found_dir =
+      repo_contents
+      |> Enum.find(:not_found, fn %{"name" => name} = entry ->
+        name == arg
+      end)
+
+    case found_dir do
+      :not_found -> print_options(repo_contents)
+      dir -> download_contents(dir)
+    end
+  end
+
+  defp download_contents(%{"url" => url} = dir_info) do
+    MixHelpers.fetch_dir_contents(url)
+    |> Enum.map(&MixHelpers.fetch_file/1)
+  end
+
+  defp startup_sequence() do
+    {:ok, _} = Application.ensure_all_started(:req)
+  end
+
+  defp print_options(repo_contents) do
+    info_block_output()
 
     Mix.Shell.IO.info("Available options are:")
 
     Mix.Shell.IO.info("")
 
-    MixHelpers.fetch_repo_contents()
-    |> MixHelpers.get_dirs()
+    repo_contents
     |> Enum.map(fn %{"name" => name} ->
-      String.split(name, "_")
-      |> Enum.map(&String.capitalize/1)
-      |> Enum.join(" ")
-      |> (&"\"#{&1}\"").()
+      name
     end)
     |> Enum.map(&Mix.Shell.IO.info/1)
 
     Mix.Shell.IO.info("")
   end
 
-  defp startup_sequence() do
-    {:ok, _} = Application.ensure_all_started(:req)
+  defp info_block_output() do
+    Mix.Shell.IO.info("#{TerminalHelpers.style("*** Attention", [:bold, :fg_cyan])}")
+
+    Mix.Shell.IO.info(
+      "Spirit Gen needs to run with one string argument for the exercise to download"
+    )
+
+    Mix.Shell.IO.info("Each string argument should be snake case")
+    Mix.Shell.IO.info("Either no arg was provided or there was no match")
+    Mix.Shell.IO.info("")
+    Mix.Shell.IO.info("Example: basic_types")
+
+    Mix.Shell.IO.info("")
   end
 end
