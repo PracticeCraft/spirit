@@ -11,12 +11,25 @@ defmodule MixHelpers do
     Req.get!(path).body
   end
 
-  def fetch_file(%{"url" => url} = file_info) do
-    Req.get!(url).body
-    |> IO.inspect()
+  def fetch_content_object(%{"url" => url, "type" => "file"}) do
+    %{"content" => content, "path" => path} = Req.get!(url).body
 
-    IO.inspect(file_info)
+    path_prefix =
+      case Path.extname(path) do
+        ".ex" ->
+          "lib/exercises"
+
+        ".exs" ->
+          "test/exercises"
+      end
+
+    full_path = Path.join([path_prefix, path])
+
+    Mix.Generator.create_file(full_path, Base.decode64!(content, ignore: :whitespace))
   end
 
-  # def write_file()
+  def fetch_content_object(%{"url" => url, "type" => "dir"}) do
+    MixHelpers.fetch_dir_contents(url)
+    |> Enum.map(&MixHelpers.fetch_content_object/1)
+  end
 end

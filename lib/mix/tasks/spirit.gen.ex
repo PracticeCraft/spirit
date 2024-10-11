@@ -16,7 +16,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     handle_args(path, remaining_args)
   end
 
-  # If no args given, fetch options and kk
+  # If no args given, fetch options and display
   defp handle_args(path, []) do
     startup_sequence()
 
@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Spirit.Gen do
 
   defp download_contents(%{"url" => url} = dir_info) do
     MixHelpers.fetch_dir_contents(url)
-    |> Enum.map(&MixHelpers.fetch_file/1)
+    |> Enum.map(&MixHelpers.fetch_content_object/1)
   end
 
   defp startup_sequence() do
