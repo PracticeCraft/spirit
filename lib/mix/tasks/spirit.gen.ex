@@ -58,31 +58,25 @@ defmodule Mix.Tasks.Spirit.Gen do
   defp print_options(repo_contents) do
     info_block_output()
 
-    Mix.Shell.IO.info("Available options are:")
-
-    Mix.Shell.IO.info("")
+    Mix.Shell.IO.info("Available options are:\n")
 
     repo_contents
-    |> Enum.map(fn %{"name" => name} ->
-      name
-    end)
+    |> Enum.map(fn %{"name" => name} -> name end)
     |> Enum.map(&Mix.Shell.IO.info/1)
 
     Mix.Shell.IO.info("")
   end
 
   defp info_block_output() do
-    Mix.Shell.IO.info("#{TerminalHelpers.style("*** Attention", [:bold, :fg_cyan])}")
+    Mix.Shell.IO.error("** Error: invalid command")
 
-    Mix.Shell.IO.info(
-      "Spirit Gen needs to run with one string argument for the exercise to download"
-    )
+    Mix.Shell.IO.info("""
 
-    Mix.Shell.IO.info("Each string argument should be snake case")
-    Mix.Shell.IO.info("Either no arg was provided or there was no match")
-    Mix.Shell.IO.info("")
-    Mix.Shell.IO.info("Example: basic_types")
+    Spirit Gen needs to run with one string argument for the exercise to download
+    Each string argument should be snake case
+    Either no arg was provided or there was no match
 
-    Mix.Shell.IO.info("")
+    Example: basic_types
+    """)
   end
 end
