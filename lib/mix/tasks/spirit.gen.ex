@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     startup_sequence()
 
     repo_contents =
-      MixHelpers.fetch_repo_contents(path)
+      MixHelpers.fetch_gh_contents!(path)
       |> MixHelpers.get_dirs()
 
     print_options(repo_contents)
@@ -31,12 +31,12 @@ defmodule Mix.Tasks.Spirit.Gen do
     startup_sequence()
 
     repo_contents =
-      MixHelpers.fetch_repo_contents(path)
+      MixHelpers.fetch_gh_contents!(path)
       |> MixHelpers.get_dirs()
 
     found_dir =
       repo_contents
-      |> Enum.find(:not_found, fn %{"name" => name} = entry ->
+      |> Enum.find(:not_found, fn %{"name" => name} = _entry ->
         name == arg
       end)
 
@@ -46,9 +46,9 @@ defmodule Mix.Tasks.Spirit.Gen do
     end
   end
 
-  defp download_contents(%{"url" => url} = dir_info) do
-    MixHelpers.fetch_dir_contents(url)
-    |> Enum.map(&MixHelpers.fetch_content_object/1)
+  defp download_contents(%{"url" => url} = _dir_info) do
+    MixHelpers.fetch_gh_contents!(url)
+    |> Enum.map(&MixHelpers.download_content_object/1)
   end
 
   defp startup_sequence() do
