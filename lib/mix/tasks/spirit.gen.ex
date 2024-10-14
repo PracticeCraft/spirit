@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     startup_sequence()
 
     repo_contents =
-      MixHelpers.fetch_repo_contents(path)
+      MixHelpers.fetch_gh_contents!(path)
       |> MixHelpers.get_dirs()
 
     print_options(repo_contents)
@@ -31,12 +31,12 @@ defmodule Mix.Tasks.Spirit.Gen do
     startup_sequence()
 
     repo_contents =
-      MixHelpers.fetch_repo_contents(path)
+      MixHelpers.fetch_gh_contents!(path)
       |> MixHelpers.get_dirs()
 
     found_dir =
       repo_contents
-      |> Enum.find(:not_found, fn %{"name" => name} = entry ->
+      |> Enum.find(:not_found, fn %{"name" => name} ->
         name == arg
       end)
 
@@ -46,9 +46,9 @@ defmodule Mix.Tasks.Spirit.Gen do
     end
   end
 
-  defp download_contents(%{"url" => url} = dir_info) do
-    MixHelpers.fetch_dir_contents(url)
-    |> Enum.map(&MixHelpers.fetch_content_object/1)
+  defp download_contents(%{"url" => url}) do
+    MixHelpers.fetch_gh_contents!(url)
+    |> Enum.map(&MixHelpers.download_content_object/1)
   end
 
   defp startup_sequence() do
@@ -58,31 +58,25 @@ defmodule Mix.Tasks.Spirit.Gen do
   defp print_options(repo_contents) do
     info_block_output()
 
-    Mix.Shell.IO.info("Available options are:")
-
-    Mix.Shell.IO.info("")
+    Mix.Shell.IO.info("Available options are:\n")
 
     repo_contents
-    |> Enum.map(fn %{"name" => name} ->
-      name
-    end)
+    |> Enum.map(fn %{"name" => name} -> name end)
     |> Enum.map(&Mix.Shell.IO.info/1)
 
     Mix.Shell.IO.info("")
   end
 
   defp info_block_output() do
-    Mix.Shell.IO.info("#{TerminalHelpers.style("*** Attention", [:bold, :fg_cyan])}")
+    Mix.Shell.IO.error("** Error: invalid command")
 
-    Mix.Shell.IO.info(
-      "Spirit Gen needs to run with one string argument for the exercise to download"
-    )
+    Mix.Shell.IO.info("""
 
-    Mix.Shell.IO.info("Each string argument should be snake case")
-    Mix.Shell.IO.info("Either no arg was provided or there was no match")
-    Mix.Shell.IO.info("")
-    Mix.Shell.IO.info("Example: basic_types")
+    Spirit Gen needs to run with one string argument for the exercise to download
+    Each string argument should be snake case
+    Either no arg was provided or there was no match
 
-    Mix.Shell.IO.info("")
+    Example: basic_types
+    """)
   end
 end

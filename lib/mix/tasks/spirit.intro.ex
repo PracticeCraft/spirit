@@ -1,11 +1,9 @@
 defmodule Mix.Tasks.Spirit.Intro do
   use Mix.Task
 
-  import TerminalHelpers
-
   @message """
 
-  #{style("Welcome to Spirit! 💧", [:fg_cyan, :bold])}
+  #{IO.ANSI.cyan() <> IO.ANSI.bright() <> "Welcome to Spirit! 💧" <> IO.ANSI.reset()}
 
   Spirit gives you exercises that accompany the Elixir Getting Started guide.
   The project is structured to mimic typical Elixir project workflow and give
@@ -18,7 +16,7 @@ defmodule Mix.Tasks.Spirit.Intro do
        (e.g., Basic Types: https://hexdocs.pm/elixir/basic-types.html)
 
     2. Generate the exercises and tests using the Mix task `spirit.gen`
-       (e.g., `mix spirit.gen "basic types"`)
+       (e.g., `mix spirit.gen basic_types`)
 
     3. Solve the exercises in the generated module
 
@@ -29,7 +27,7 @@ defmodule Mix.Tasks.Spirit.Intro do
     6. Proceed to the next guide
 
   If you find any issues or need support, open an issue at:
-  https://github.com/waseem-medhat/spirit/issues
+  https://github.com/PracticeCraft/spirit/issues
   """
 
   def run(_) do
