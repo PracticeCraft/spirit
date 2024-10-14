@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Spirit.Gen do
 
     found_dir =
       repo_contents
-      |> Enum.find(:not_found, fn %{"name" => name} = _entry ->
+      |> Enum.find(:not_found, fn %{"name" => name} ->
         name == arg
       end)
 
@@ -46,7 +46,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     end
   end
 
-  defp download_contents(%{"url" => url} = _dir_info) do
+  defp download_contents(%{"url" => url}) do
     MixHelpers.fetch_gh_contents!(url)
     |> Enum.map(&MixHelpers.download_content_object/1)
   end
