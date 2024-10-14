@@ -24,19 +24,15 @@ defmodule MixHelpers do
   """
   def download_content_object(%{"url" => url, "type" => "file"}) do
     %{"content" => content, "path" => path} = Req.get!(url).body
+    exercise_name = path |> String.split("/") |> hd()
 
-    path_prefix =
+    file_path =
       case Path.extname(path) do
-        ".ex" ->
-          "lib/exercises"
-
-        ".exs" ->
-          "test/exercises"
+        ".ex" -> "lib/exercises/#{exercise_name}.ex"
+        ".exs" -> "test/exercises/#{exercise_name}_test.exs"
       end
 
-    full_path = Path.join([path_prefix, path])
-
-    Mix.Generator.create_file(full_path, Base.decode64!(content, ignore: :whitespace))
+    Mix.Generator.create_file(file_path, Base.decode64!(content, ignore: :whitespace))
   end
 
   def download_content_object(%{"url" => url, "type" => "dir"}) do
