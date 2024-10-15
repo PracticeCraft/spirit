@@ -52,4 +52,7 @@ testing with the modules.
 
 ## Contribution
 
-Contributions are welcome! Please refer to our contribution guide.
+Contributions are welcome! And there is more than one way to help with the main
+project or the exercise material. Please read [our contribution
+guide](https://github.com/PracticeCraft/spirit/blob/main/CONTRIBUTING.md) to
+learn more if you are interested.
