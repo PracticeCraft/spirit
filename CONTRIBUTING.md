@@ -77,14 +77,10 @@ INJECTION, per the convention Elixir
   users what the function is expected to return when the function works correctly. 
 - The test file should include a `doctest` call, but if specific functions need
   to be excluded because they are being problematic that's fine with us. 
-- Each function in the exercises file should have a related series of tests to
-  make sure the user fills in the function outputs the correct result when the
-  user is done. 
+- Each function in the exercises file should have a related series of tests. When the user fills in the function and the function outputs the correct result, the tests should pass. Simple enough.  
 
 Our workflow for the first of the exercises has been writing the functions and
-tests in tandem inside the main repo, and then removing the function bodies when we are done. We then copy the prepared files over to the exercises repo
-when it's time, into the right files. From there we test the generator to make
-sure it all works. 
+tests in tandem inside the main repo, and then removing the function bodies when we are done. We then copy the prepared files over to the exercises repo when it's time, into the right files. From there we test the generator to make sure it all works. 
 
 
 
