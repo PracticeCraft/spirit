@@ -33,6 +33,12 @@ that someone wants to start their own repo of exercises, the generator takes a
 exercises repo and then pointing to your fork during exercise development, then
 submitting PR's to the main repo when the exercises are ready. 
 
+If you wish to add exercises, **please check for an open issue** related to the
+docs section you are working on before you start. If you don't see one, feel
+free to open an issue with the docs section name and comment that you are working on it. If you find an open issue, please check it and make sure it's not being worked on, OR reach out to the
+person working on it and offer to help ;) Issues for exercises for both new
+contributions and fixes / updates should be in the [exercises repo](https://github.com/PracticeCraft/spirit-exercises)
+
 Inside each directory should be 2 files. 
 
 - An exercises file with the name `exercises.ex`
