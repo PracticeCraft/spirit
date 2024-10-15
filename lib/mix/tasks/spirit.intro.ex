@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Spirit.Intro do
 
     4. Run the tests with `mix test`
 
-    5. Repeat steps 2 & 3 until all the tests pass
+    5. Repeat steps 3 & 4 until all the tests pass
 
     6. Proceed to the next guide
 
