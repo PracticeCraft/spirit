@@ -24,6 +24,9 @@ structure and builtin tooling.
 
 ## Usage
 
+Make sure you have Elixir 1.17 and Erlang/OTP 27 installed. The recommended
+method of installation is via [asdf](https://asdf-vm.com/).
+
 To start using Spirit, clone this repo (or fork it first if you would like).
 Then, the workflow should go as follows:
 
