@@ -65,7 +65,7 @@ mentioned above to the directory.
 When a PR is submitted we're looking for the following: 
 
 - Each directory name should be unique and also align with the docs section it
-provides exercised for.
+provides exercises for.
 - Each directory should contain 2 files (for now, we can discuss other
 structures down the road) - an `exercises.ex` and an `exercises_test.exs` file.
 Note that those names are important - the `.ex` and `.exs` extensions are how
