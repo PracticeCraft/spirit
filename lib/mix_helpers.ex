@@ -27,9 +27,12 @@ defmodule MixHelpers do
     exercise_name = path |> String.split("/") |> hd()
 
     file_path =
-      case Path.extname(path) do
-        ".ex" -> "lib/exercises/#{exercise_name}.ex"
-        ".exs" -> "test/exercises/#{exercise_name}_test.exs"
+      case path do
+        ^exercise_name <> "/exercises.ex" ->
+          "lib/exercises/#{exercise_name}.ex"
+
+        ^exercise_name <> "/exercises_test.exs" ->
+          "test/exercises/#{exercise_name}_test.exs"
       end
 
     Mix.Generator.create_file(file_path, Base.decode64!(content, ignore: :whitespace))
