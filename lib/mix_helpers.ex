@@ -7,7 +7,13 @@ defmodule MixHelpers do
   Fetches the contents of the given `path` using the GitHub API.
   """
   def fetch_gh_contents!("https://api.github.com/repos" <> _ = path) do
-    Req.get!(path).body
+    case Req.get!(path) do
+      %{status: 200} = response ->
+        response.body
+
+      error_response ->
+        raise("received non-OK response: #{inspect(error_response, pretty: true)}")
+    end
   end
 
   @doc """
