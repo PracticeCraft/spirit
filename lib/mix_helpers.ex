@@ -35,10 +35,10 @@ defmodule MixHelpers do
     file_path =
       case path do
         ^exercise_name <> "/exercises.ex" ->
-          "lib/exercises/#{exercise_name}.ex"
+          "lib/spirit/#{exercise_name}.ex"
 
         ^exercise_name <> "/exercises_test.exs" ->
-          "test/exercises/#{exercise_name}_test.exs"
+          "test/spirit/#{exercise_name}_test.exs"
       end
 
     Mix.Generator.create_file(file_path, Base.decode64!(content, ignore: :whitespace))
