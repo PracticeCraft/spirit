@@ -48,4 +48,18 @@ defmodule MixHelpers do
     fetch_gh_contents!(url)
     |> Enum.map(&download_content_object/1)
   end
+
+  @doc """
+  Lists all module names in the same order as the official guide.
+  """
+  def list_all_modules() do
+    [
+      "basic_types",
+      "lists_and_tuples",
+      "pattern_matching",
+      "case_cond_and_if",
+      "anonymous_functions",
+      "binaries_strings_and_charlists"
+    ]
+  end
 end

@@ -16,15 +16,20 @@ defmodule Mix.Tasks.Spirit.Gen do
     handle_args(path, remaining_args)
   end
 
-  # If no args given, fetch options and display
+  # If no args given, detect next module
   defp handle_args(path, []) do
     startup_sequence()
 
-    repo_contents =
-      MixHelpers.fetch_gh_contents!(path)
-      |> MixHelpers.get_dirs()
+    case get_next_module() do
+      {:ok, :complete} ->
+        Mix.Shell.IO.info("Nothing to generate. You have all available exercises! 🎉")
 
-    print_options(repo_contents)
+      {:ok, next_module} ->
+        handle_args(path, [next_module])
+
+      {:error, :abort} ->
+        Mix.Shell.IO.info("Aborted")
+    end
   end
 
   defp handle_args(path, [arg]) do
@@ -78,5 +83,38 @@ defmodule Mix.Tasks.Spirit.Gen do
 
     Example: basic_types
     """)
+  end
+
+  defp get_next_module() do
+    saved_modules =
+      case File.ls("lib/spirit") do
+        {:error, :enoent} ->
+          []
+
+        {:ok, file_list} ->
+          Enum.map(file_list, fn file_name -> String.trim_trailing(file_name, ".ex") end)
+      end
+
+    next_module =
+      MixHelpers.list_all_modules()
+      |> Enum.find(fn module -> module not in saved_modules end)
+
+    case next_module do
+      nil -> {:ok, :complete}
+      module -> prompt_next_module(module)
+    end
+  end
+
+  defp prompt_next_module(next_module) do
+    Mix.Shell.IO.info(
+      "Based on what you have saved in your project, " <>
+        "the next module to fetch is:\n\n#{next_module}\n"
+    )
+
+    Mix.Shell.IO.yes?("Proceed to generate exercises for this module?")
+    |> case do
+      true -> {:ok, next_module}
+      false -> {:error, :abort}
+    end
   end
 end
