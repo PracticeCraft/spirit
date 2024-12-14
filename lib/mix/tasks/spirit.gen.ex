@@ -16,36 +16,37 @@ defmodule Mix.Tasks.Spirit.Gen do
     handle_args(path, remaining_args)
   end
 
-  # If no args given, detect next module
-  defp handle_args(path, []) do
+  defp handle_args(path, args) do
     startup_sequence()
+    repo_contents = MixHelpers.fetch_gh_contents!(path)
 
-    case get_next_module() do
+    case args do
+      [] -> get_module(repo_contents)
+      [arg] -> get_module(repo_contents, arg)
+    end
+  end
+
+  defp get_module(repo_contents) do
+    module_list = MixHelpers.get_dirs(repo_contents)
+
+    case check_next_module(module_list) do
       {:ok, :complete} ->
         Mix.Shell.IO.info("Nothing to generate. You have all available exercises! 🎉")
 
       {:ok, next_module} ->
-        handle_args(path, [next_module])
+        get_module(repo_contents, next_module)
 
       {:error, :abort} ->
         Mix.Shell.IO.info("Aborted")
     end
   end
 
-  defp handle_args(path, [arg]) do
-    startup_sequence()
-
-    repo_contents =
-      MixHelpers.fetch_gh_contents!(path)
-      |> MixHelpers.get_dirs()
-
-    found_dir =
-      repo_contents
-      |> Enum.find(:not_found, fn %{"name" => name} ->
-        name == arg
-      end)
-
-    case found_dir do
+  defp get_module(repo_contents, module_name) do
+    repo_contents
+    |> Enum.find(:not_found, fn %{"name" => name, "type" => type} ->
+      type == "dir" and name == module_name
+    end)
+    |> case do
       :not_found -> print_options(repo_contents)
       dir -> download_contents(dir)
     end
@@ -66,7 +67,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     Mix.Shell.IO.info("Available options are:\n")
 
     repo_contents
-    |> Enum.map(fn %{"name" => name} -> name end)
+    |> MixHelpers.get_dirs()
     |> Enum.map(&Mix.Shell.IO.info/1)
 
     Mix.Shell.IO.info("")
@@ -85,7 +86,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     """)
   end
 
-  defp get_next_module() do
+  defp check_next_module(module_list) do
     saved_modules =
       case File.ls("lib/spirit") do
         {:error, :enoent} ->
@@ -95,9 +96,7 @@ defmodule Mix.Tasks.Spirit.Gen do
           Enum.map(file_list, fn file_name -> String.trim_trailing(file_name, ".ex") end)
       end
 
-    next_module =
-      MixHelpers.list_all_modules()
-      |> Enum.find(fn module -> module not in saved_modules end)
+    next_module = Enum.find(module_list, fn module -> module not in saved_modules end)
 
     case next_module do
       nil -> {:ok, :complete}

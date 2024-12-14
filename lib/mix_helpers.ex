@@ -17,10 +17,40 @@ defmodule MixHelpers do
   end
 
   @doc """
-  Filters the contents of a repo for directories only.
+  Lists the directory names in the given repo contents.
+
+  If the repo contents include a `module_list.txt` file, use the content of that
+  file to sort the directories in the specified order.
   """
   def get_dirs(repo_contents) do
-    Enum.filter(repo_contents, fn %{"type" => type} -> type == "dir" end)
+    dirs =
+      repo_contents
+      |> Enum.filter(fn %{"type" => type} -> type == "dir" end)
+      |> Enum.map(fn %{"name" => name} -> name end)
+
+    case get_module_list_url(repo_contents) do
+      nil ->
+        dirs
+
+      module_list_url ->
+        %{"content" => module_list_content} = Req.get!(module_list_url).body
+
+        module_list_content
+        |> Base.decode64!(ignore: :whitespace)
+        |> String.split("\n", trim: true)
+        |> Enum.filter(fn dir -> dir in dirs end)
+    end
+  end
+
+  @doc """
+  Given the repo contents list, returns the url of the `module_list.txt` file or
+  `nil` otherwise.
+  """
+  def get_module_list_url(repo_contents) do
+    Enum.find_value(repo_contents, fn
+      %{"name" => "module_list.txt", "url" => url} -> url
+      _ -> nil
+    end)
   end
 
   @doc """
@@ -47,19 +77,5 @@ defmodule MixHelpers do
   def download_content_object(%{"url" => url, "type" => "dir"}) do
     fetch_gh_contents!(url)
     |> Enum.map(&download_content_object/1)
-  end
-
-  @doc """
-  Lists all module names in the same order as the official guide.
-  """
-  def list_all_modules() do
-    [
-      "basic_types",
-      "lists_and_tuples",
-      "pattern_matching",
-      "case_cond_and_if",
-      "anonymous_functions",
-      "binaries_strings_and_charlists"
-    ]
   end
 end
