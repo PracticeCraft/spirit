@@ -17,40 +17,40 @@ defmodule MixHelpers do
   end
 
   @doc """
+  Fetches `module_list.txt` (which should be at the root of the repo contents)
+  and builds the ordered module list from it.
+  """
+  def fetch_module_list!(repo_contents) do
+    module_list_url =
+      Enum.find_value(repo_contents, fn
+        %{"name" => "module_list.txt", "url" => url} -> url
+        _ -> nil
+      end)
+
+    if is_nil(module_list_url), do: raise("`module_list.txt` not found in the repo")
+
+    fetch_gh_contents!(module_list_url)
+    |> Map.get("content")
+    |> Base.decode64!(ignore: :whitespace)
+    |> String.split("\n", trim: true)
+  end
+
+  @doc """
   Lists the directory names in the given repo contents.
 
-  If the repo contents include a `module_list.txt` file, use the content of that
-  file to sort the directories in the specified order.
+  If the option `:sort_with` is provided with a list, directory names are
+  reordered as per that list.
   """
-  def get_dirs(repo_contents) do
+  def get_dirs(repo_contents, opts \\ []) do
     dirs =
       repo_contents
       |> Enum.filter(fn %{"type" => type} -> type == "dir" end)
       |> Enum.map(fn %{"name" => name} -> name end)
 
-    case get_module_list_url(repo_contents) do
-      nil ->
-        dirs
-
-      module_list_url ->
-        %{"content" => module_list_content} = Req.get!(module_list_url).body
-
-        module_list_content
-        |> Base.decode64!(ignore: :whitespace)
-        |> String.split("\n", trim: true)
-        |> Enum.filter(fn dir -> dir in dirs end)
+    case Keyword.get(opts, :sort_with) do
+      nil -> dirs
+      module_list -> Enum.filter(module_list, fn dir -> dir in dirs end)
     end
-  end
-
-  @doc """
-  Given the repo contents list, returns the url of the `module_list.txt` file or
-  `nil` otherwise.
-  """
-  def get_module_list_url(repo_contents) do
-    Enum.find_value(repo_contents, fn
-      %{"name" => "module_list.txt", "url" => url} -> url
-      _ -> nil
-    end)
   end
 
   @doc """

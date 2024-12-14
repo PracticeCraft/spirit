@@ -4,13 +4,7 @@ defmodule Mix.Tasks.Spirit.Gen do
   @base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
 
   def run(args) do
-    {opts, remaining_args, _} =
-      OptionParser.parse(args,
-        switches: [
-          path: :string
-        ]
-      )
-
+    {opts, remaining_args, _} = OptionParser.parse(args, switches: [path: :string])
     path = opts[:path] || @base_url
 
     handle_args(path, remaining_args)
@@ -19,42 +13,35 @@ defmodule Mix.Tasks.Spirit.Gen do
   defp handle_args(path, args) do
     startup_sequence()
     repo_contents = MixHelpers.fetch_gh_contents!(path)
+    module_list = MixHelpers.fetch_module_list!(repo_contents)
 
     case args do
-      [] -> get_module(repo_contents)
-      [arg] -> get_module(repo_contents, arg)
+      [] -> find_next_module(module_list) |> handle_next_module(repo_contents)
+      [arg] -> get_module(arg, repo_contents)
+      _ -> print_options(repo_contents)
     end
   end
 
-  defp get_module(repo_contents) do
-    module_list = MixHelpers.get_dirs(repo_contents)
+  defp handle_next_module(:complete, _repo_contents) do
+    Mix.Shell.IO.info("Nothing to generate. You have all available exercises! 🎉")
+  end
 
-    case check_next_module(module_list) do
-      {:ok, :complete} ->
-        Mix.Shell.IO.info("Nothing to generate. You have all available exercises! 🎉")
-
-      {:ok, next_module} ->
-        get_module(repo_contents, next_module)
-
-      {:error, :abort} ->
-        Mix.Shell.IO.info("Aborted")
+  defp handle_next_module(next_module, repo_contents) do
+    case prompt_next_module?(next_module) do
+      true -> get_module(next_module, repo_contents)
+      false -> Mix.Shell.IO.info("Aborted")
     end
   end
 
-  defp get_module(repo_contents, module_name) do
+  defp get_module(module_name, repo_contents) do
     repo_contents
     |> Enum.find(:not_found, fn %{"name" => name, "type" => type} ->
       type == "dir" and name == module_name
     end)
     |> case do
       :not_found -> print_options(repo_contents)
-      dir -> download_contents(dir)
+      dir -> MixHelpers.download_content_object(dir)
     end
-  end
-
-  defp download_contents(%{"url" => url}) do
-    MixHelpers.fetch_gh_contents!(url)
-    |> Enum.map(&MixHelpers.download_content_object/1)
   end
 
   defp startup_sequence() do
@@ -86,7 +73,7 @@ defmodule Mix.Tasks.Spirit.Gen do
     """)
   end
 
-  defp check_next_module(module_list) do
+  defp find_next_module(module_list) do
     saved_modules =
       case File.ls("lib/spirit") do
         {:error, :enoent} ->
@@ -96,24 +83,15 @@ defmodule Mix.Tasks.Spirit.Gen do
           Enum.map(file_list, fn file_name -> String.trim_trailing(file_name, ".ex") end)
       end
 
-    next_module = Enum.find(module_list, fn module -> module not in saved_modules end)
-
-    case next_module do
-      nil -> {:ok, :complete}
-      module -> prompt_next_module(module)
-    end
+    Enum.find(module_list, :complete, fn module -> module not in saved_modules end)
   end
 
-  defp prompt_next_module(next_module) do
+  defp prompt_next_module?(next_module) do
     Mix.Shell.IO.info(
       "Based on what you have saved in your project, " <>
         "the next module to fetch is:\n\n#{next_module}\n"
     )
 
     Mix.Shell.IO.yes?("Proceed to generate exercises for this module?")
-    |> case do
-      true -> {:ok, next_module}
-      false -> {:error, :abort}
-    end
   end
 end
