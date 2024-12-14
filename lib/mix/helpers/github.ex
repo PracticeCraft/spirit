@@ -1,13 +1,25 @@
-defmodule MixHelpers do
+defmodule Mix.Helpers.GitHub do
   @moduledoc """
-  Helpers for the Mix generator task `spirit.gen`
+  Helper functions for fetching and handling content from the GitHub API.
+
+  Responses from the GitHub API are in the form of "content objects" which are
+  JSON objects with the following (relevant) fields:
+
+  - "content": a list of nested content objects (for directories), or a
+  base-64-encoded string (for files)
+
+  - "path": file path,e.g., `basic_types/exercises.ex`
+
+  - "url": GitHub API URL for the file or directory
   """
 
   @doc """
   Fetches the contents of the given `path` using the GitHub API.
+
+  Returns a single content object or a list of them.
   """
-  def fetch_gh_contents!("https://api.github.com/repos" <> _ = path) do
-    case Req.get!(path) do
+  def fetch_gh_contents!("https://api.github.com/repos" <> _ = url) do
+    case Req.get!(url) do
       %{status: 200} = response ->
         response.body
 
@@ -38,8 +50,8 @@ defmodule MixHelpers do
   @doc """
   Lists the directory names in the given repo contents.
 
-  If the option `:sort_with` is provided with a list, directory names are
-  reordered as per that list.
+  If the option `:sort_with` is provided with a list, directory names are sorted
+  to match the ordering of that list.
   """
   def get_dirs(repo_contents, opts \\ []) do
     dirs =
@@ -54,12 +66,12 @@ defmodule MixHelpers do
   end
 
   @doc """
-  Downloads exercises/tests content given a GitHub contents "object".
+  Downloads exercises/tests content given a GitHub content object.
 
   Fetching is done recursively through directories.
   """
-  def download_content_object(%{"url" => url, "type" => "file"}) do
-    %{"content" => content, "path" => path} = Req.get!(url).body
+  def download_content_object!(%{"url" => url, "type" => "file"}) do
+    %{"content" => content, "path" => path} = fetch_gh_contents!(url)
     exercise_name = path |> String.split("/") |> hd()
 
     file_path =
@@ -74,8 +86,8 @@ defmodule MixHelpers do
     Mix.Generator.create_file(file_path, Base.decode64!(content, ignore: :whitespace))
   end
 
-  def download_content_object(%{"url" => url, "type" => "dir"}) do
+  def download_content_object!(%{"url" => url, "type" => "dir"}) do
     fetch_gh_contents!(url)
-    |> Enum.map(&download_content_object/1)
+    |> Enum.map(&download_content_object!/1)
   end
 end

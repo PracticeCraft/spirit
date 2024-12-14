@@ -12,86 +12,60 @@ defmodule Mix.Tasks.Spirit.Gen do
 
   defp handle_args(path, args) do
     startup_sequence()
-    repo_contents = MixHelpers.fetch_gh_contents!(path)
-    module_list = MixHelpers.fetch_module_list!(repo_contents)
+    repo_contents = Mix.Helpers.GitHub.fetch_gh_contents!(path)
+    module_list = Mix.Helpers.GitHub.fetch_module_list!(repo_contents)
+    available_modules = Mix.Helpers.GitHub.get_dirs(repo_contents, sort_with: module_list)
 
-    case args do
-      [] -> find_next_module(module_list) |> handle_next_module(repo_contents)
-      [arg] -> get_module(arg, repo_contents)
-      _ -> print_options(repo_contents)
+    fetch_result =
+      case args do
+        [] -> fetch_next_module(available_modules, repo_contents)
+        [arg] -> fetch_module(arg, repo_contents)
+        _ -> {:error, :invalid_cmd}
+      end
+
+    Mix.Helpers.IO.print_result_message(fetch_result, available_modules)
+  end
+
+  defp fetch_next_module(available_modules, repo_contents) do
+    case find_next_module(available_modules) do
+      :complete ->
+        {:ok, :complete}
+
+      next_module ->
+        case Mix.Helpers.IO.confirm_download?(next_module) do
+          true -> fetch_module(next_module, repo_contents)
+          false -> {:error, :aborted}
+        end
     end
   end
 
-  defp handle_next_module(:complete, _repo_contents) do
-    Mix.Shell.IO.info("Nothing to generate. You have all available exercises! 🎉")
-  end
+  defp fetch_module(module_name, repo_contents) do
+    module_dir =
+      Enum.find(repo_contents, :not_found, fn %{"name" => name, "type" => type} ->
+        type == "dir" and name == module_name
+      end)
 
-  defp handle_next_module(next_module, repo_contents) do
-    case prompt_next_module?(next_module) do
-      true -> get_module(next_module, repo_contents)
-      false -> Mix.Shell.IO.info("Aborted")
+    case module_dir do
+      :not_found ->
+        {:error, :enoent}
+
+      dir ->
+        Mix.Helpers.GitHub.download_content_object!(dir)
+        {:ok, :fetched}
     end
   end
 
-  defp get_module(module_name, repo_contents) do
-    repo_contents
-    |> Enum.find(:not_found, fn %{"name" => name, "type" => type} ->
-      type == "dir" and name == module_name
-    end)
-    |> case do
-      :not_found -> print_options(repo_contents)
-      dir -> MixHelpers.download_content_object(dir)
-    end
+  defp find_next_module(available_modules) do
+    saved_modules =
+      case File.ls("lib/spirit") do
+        {:error, :enoent} -> []
+        {:ok, file_list} -> Enum.map(file_list, fn file -> String.trim_trailing(file, ".ex") end)
+      end
+
+    Enum.find(available_modules, :complete, fn module -> module not in saved_modules end)
   end
 
   defp startup_sequence() do
     {:ok, _} = Application.ensure_all_started(:req)
-  end
-
-  defp print_options(repo_contents) do
-    info_block_output()
-
-    Mix.Shell.IO.info("Available options are:\n")
-
-    repo_contents
-    |> MixHelpers.get_dirs()
-    |> Enum.map(&Mix.Shell.IO.info/1)
-
-    Mix.Shell.IO.info("")
-  end
-
-  defp info_block_output() do
-    Mix.Shell.IO.error("** Error: invalid command")
-
-    Mix.Shell.IO.info("""
-
-    Spirit Gen needs to run with one string argument for the exercise to download
-    Each string argument should be snake case
-    Either no arg was provided or there was no match
-
-    Example: basic_types
-    """)
-  end
-
-  defp find_next_module(module_list) do
-    saved_modules =
-      case File.ls("lib/spirit") do
-        {:error, :enoent} ->
-          []
-
-        {:ok, file_list} ->
-          Enum.map(file_list, fn file_name -> String.trim_trailing(file_name, ".ex") end)
-      end
-
-    Enum.find(module_list, :complete, fn module -> module not in saved_modules end)
-  end
-
-  defp prompt_next_module?(next_module) do
-    Mix.Shell.IO.info(
-      "Based on what you have saved in your project, " <>
-        "the next module to fetch is:\n\n#{next_module}\n"
-    )
-
-    Mix.Shell.IO.yes?("Proceed to generate exercises for this module?")
   end
 end
