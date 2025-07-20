@@ -20,7 +20,6 @@ defmodule Mix.Helpers.GitHub do
   Returns a flat list of module names in the form of "dir/module", e.g.,
   "basic_types/kpi".
   """
-  @spec fetch_module_list!(String.t()) :: list(String.t())
   def fetch_module_list!(base_url) do
     modules_file_name = "modules.json"
 
@@ -40,20 +39,17 @@ defmodule Mix.Helpers.GitHub do
   @doc """
   Fetches the file with the given (GitHub API) URL and path and extracts its content.
   """
-  @spec fetch_gh_file!(String.t(), String.t()) :: String.t()
   def fetch_gh_file!(base_url, path) do
     fetch_gh_contents!(base_url, path)
     |> Map.get("content")
     |> Base.decode64!(ignore: :whitespace)
   end
 
-  @spec build_url(String.t(), String.t()) :: String.t()
   defp build_url(base_url, path) do
     url = Path.join(base_url, path)
     if @debug, do: url <> "?ref=staging", else: url
   end
 
-  @spec fetch_gh_contents!(String.t(), String.t()) :: map()
   defp fetch_gh_contents!("https://api.github.com/repos" <> _ = base_url, path) do
     url = build_url(base_url, path)
     if @debug, do: IO.puts("trying to fetch: " <> url)
