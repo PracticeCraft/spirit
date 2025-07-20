@@ -3,12 +3,15 @@ defmodule Mix.Helpers.IO do
   Helper functions for console IO messages and user prompts.
   """
 
+  @type result :: {:ok, :fetched | :complete} | {:error, :complete | :aborted}
+
   @doc """
   Prints a message based on the fetch result.
 
   The second argument `module_list` is needed to list the modules for the user
   in the case where an invalid command or module name is provided.
   """
+  @spec print_result_message(result(), list(String.t())) :: :ok
   def print_result_message(result, module_list) do
     case result do
       {:ok, :fetched} ->
@@ -28,6 +31,7 @@ defmodule Mix.Helpers.IO do
   @doc """
   Prompts the user to download the next module. Returns a boolean.
   """
+  @spec confirm_download?(String.t()) :: boolean()
   def confirm_download?(next_module) do
     Mix.Shell.IO.info(
       "Based on what you have saved in your project, " <>
@@ -40,6 +44,7 @@ defmodule Mix.Helpers.IO do
   @doc """
   Prints an error message with the available modules to fetch.
   """
+  @spec print_options(list(String.t())) :: :ok
   def print_options(module_list) do
     info_block_output()
 
@@ -48,6 +53,7 @@ defmodule Mix.Helpers.IO do
     Mix.Shell.IO.info("")
   end
 
+  @spec info_block_output() :: :ok
   defp info_block_output() do
     Mix.Shell.IO.error("** Error: invalid command")
 
