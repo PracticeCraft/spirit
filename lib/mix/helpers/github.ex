@@ -7,18 +7,53 @@ defmodule Mix.Helpers.GitHub do
 
   - "content": a list of nested content objects (for directories), or a
   base-64-encoded string (for files)
-
-  - "path": file path,e.g., `basic_types/exercises.ex`
-
+  - "path": file path, e.g., `basic_types/exercises.ex`
   - "url": GitHub API URL for the file or directory
   """
 
-  @doc """
-  Fetches the contents of the given `path` using the GitHub API.
+  @debug System.get_env("DEBUG") == "true"
 
-  Returns a single content object or a list of them.
+  @doc """
+  Fetches `modules.json` (which should be at the root of the repo contents) and
+  builds the ordered module list from it.
+
+  Returns a flat list of module names in the form of "dir/module", e.g.,
+  "basic_types/kpi".
   """
-  def fetch_gh_contents!("https://api.github.com/repos" <> _ = url) do
+  def fetch_module_list!(base_url) do
+    modules_file_name = "modules.json"
+
+    fetch_gh_file!(base_url, modules_file_name)
+    |> JSON.decode!()
+    |> Map.get("dirs")
+    |> Enum.flat_map(fn dir ->
+      dir_name = dir["name"]
+      dir_modules = dir["modules"]
+
+      Enum.map(dir_modules, fn mod ->
+        dir_name <> "/" <> mod
+      end)
+    end)
+  end
+
+  @doc """
+  Fetches the file with the given (GitHub API) URL and path and extracts its content.
+  """
+  def fetch_gh_file!(base_url, path) do
+    fetch_gh_contents!(base_url, path)
+    |> Map.get("content")
+    |> Base.decode64!(ignore: :whitespace)
+  end
+
+  defp build_url(base_url, path) do
+    url = Path.join(base_url, path)
+    if @debug, do: url <> "?ref=staging", else: url
+  end
+
+  defp fetch_gh_contents!("https://api.github.com/repos" <> _ = base_url, path) do
+    url = build_url(base_url, path)
+    if @debug, do: IO.puts("trying to fetch: " <> url)
+
     case Req.get!(url) do
       %{status: 200} = response ->
         response.body
@@ -26,68 +61,5 @@ defmodule Mix.Helpers.GitHub do
       error_response ->
         raise("received non-OK response: #{inspect(error_response, pretty: true)}")
     end
-  end
-
-  @doc """
-  Fetches `module_list.txt` (which should be at the root of the repo contents)
-  and builds the ordered module list from it.
-  """
-  def fetch_module_list!(repo_contents) do
-    module_list_url =
-      Enum.find_value(repo_contents, fn
-        %{"name" => "module_list.txt", "url" => url} -> url
-        _ -> nil
-      end)
-
-    if is_nil(module_list_url), do: raise("`module_list.txt` not found in the repo")
-
-    fetch_gh_contents!(module_list_url)
-    |> Map.get("content")
-    |> Base.decode64!(ignore: :whitespace)
-    |> String.split("\n", trim: true)
-  end
-
-  @doc """
-  Lists the directory names in the given repo contents.
-
-  If the option `:sort_with` is provided with a list, directory names are sorted
-  to match the ordering of that list.
-  """
-  def get_dirs(repo_contents, opts \\ []) do
-    dirs =
-      repo_contents
-      |> Enum.filter(fn %{"type" => type} -> type == "dir" end)
-      |> Enum.map(fn %{"name" => name} -> name end)
-
-    case Keyword.get(opts, :sort_with) do
-      nil -> dirs
-      module_list -> Enum.filter(module_list, fn dir -> dir in dirs end)
-    end
-  end
-
-  @doc """
-  Downloads exercises/tests content given a GitHub content object.
-
-  Fetching is done recursively through directories.
-  """
-  def download_content_object!(%{"url" => url, "type" => "file"}) do
-    %{"content" => content, "path" => path} = fetch_gh_contents!(url)
-    exercise_name = path |> String.split("/") |> hd()
-
-    file_path =
-      case path do
-        ^exercise_name <> "/exercises.ex" ->
-          "lib/spirit/#{exercise_name}.ex"
-
-        ^exercise_name <> "/exercises_test.exs" ->
-          "test/spirit/#{exercise_name}_test.exs"
-      end
-
-    Mix.Generator.create_file(file_path, Base.decode64!(content, ignore: :whitespace))
-  end
-
-  def download_content_object!(%{"url" => url, "type" => "dir"}) do
-    fetch_gh_contents!(url)
-    |> Enum.map(&download_content_object!/1)
   end
 end

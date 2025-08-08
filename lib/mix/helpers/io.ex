@@ -6,20 +6,24 @@ defmodule Mix.Helpers.IO do
   @doc """
   Prints a message based on the fetch result.
 
-  The second argument `available_modules` is needed to list the modules for the
-  user in the case where an invalid command or module name is provided.
+  The second argument `module_list` is needed to list the modules for the user
+  in the case where an invalid command or module name is provided.
   """
-  def print_result_message({:ok, :fetched}, _available_modules),
-    do: Mix.Shell.IO.info("Exercises generated. Good luck!")
+  def print_result_message(result, module_list) do
+    case result do
+      {:ok, :fetched} ->
+        Mix.Shell.IO.info("Exercises generated. Good luck!")
 
-  def print_result_message({:ok, :complete}, _available_modules),
-    do: Mix.Shell.IO.info("Nothing to generate. You have all available exercises!")
+      {:ok, :complete} ->
+        Mix.Shell.IO.info("Nothing to generate. You have all available exercises!")
 
-  def print_result_message({:error, :aborted}, _available_modules),
-    do: Mix.Shell.IO.info("Aborted")
+      {:error, :aborted} ->
+        Mix.Shell.IO.info("Aborted")
 
-  def print_result_message({:error, _}, available_modules),
-    do: Mix.Helpers.IO.print_options(available_modules)
+      {:error, _} ->
+        Mix.Helpers.IO.print_options(module_list)
+    end
+  end
 
   @doc """
   Prompts the user to download the next module. Returns a boolean.
@@ -36,11 +40,11 @@ defmodule Mix.Helpers.IO do
   @doc """
   Prints an error message with the available modules to fetch.
   """
-  def print_options(available_modules) do
+  def print_options(module_list) do
     info_block_output()
 
     Mix.Shell.IO.info("Available options are:\n")
-    Enum.map(available_modules, &Mix.Shell.IO.info/1)
+    Enum.map(module_list, &Mix.Shell.IO.info/1)
     Mix.Shell.IO.info("")
   end
 

@@ -1,68 +1,72 @@
 defmodule Mix.Tasks.Spirit.Gen do
   use Mix.Task
 
-  @base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
+  @default_base_url "https://api.github.com/repos/PracticeCraft/spirit-exercises/contents/"
 
   def run(args) do
     {opts, remaining_args, _} = OptionParser.parse(args, switches: [path: :string])
-    path = opts[:path] || @base_url
-
-    handle_args(path, remaining_args)
+    base_url = opts[:path] || @default_base_url
+    handle_args(base_url, remaining_args)
   end
 
-  defp handle_args(path, args) do
+  defp handle_args(base_url, args) do
     startup_sequence()
-    repo_contents = Mix.Helpers.GitHub.fetch_gh_contents!(path)
-    module_list = Mix.Helpers.GitHub.fetch_module_list!(repo_contents)
-    available_modules = Mix.Helpers.GitHub.get_dirs(repo_contents, sort_with: module_list)
+    module_list = Mix.Helpers.GitHub.fetch_module_list!(base_url)
 
     fetch_result =
       case args do
-        [] -> fetch_next_module(available_modules, repo_contents)
-        [arg] -> fetch_module(arg, repo_contents)
+        [] -> fetch_next_module(module_list, base_url)
+        [arg] -> fetch_module(arg, module_list, base_url)
         _ -> {:error, :invalid_cmd}
       end
 
-    Mix.Helpers.IO.print_result_message(fetch_result, available_modules)
+    Mix.Helpers.IO.print_result_message(fetch_result, module_list)
   end
 
-  defp fetch_next_module(available_modules, repo_contents) do
-    case find_next_module(available_modules) do
+  defp fetch_next_module(module_list, base_url) do
+    case find_next_module(module_list) do
       :complete ->
         {:ok, :complete}
 
       next_module ->
         case Mix.Helpers.IO.confirm_download?(next_module) do
-          true -> fetch_module(next_module, repo_contents)
+          true -> fetch_module(next_module, module_list, base_url)
           false -> {:error, :aborted}
         end
     end
   end
 
-  defp fetch_module(module_name, repo_contents) do
-    module_dir =
-      Enum.find(repo_contents, :not_found, fn %{"name" => name, "type" => type} ->
-        type == "dir" and name == module_name
-      end)
+  defp fetch_module(module_name, module_list, base_url) do
+    if module_name not in module_list do
+      {:error, :enoent}
+    else
+      exercise_path = Path.join(module_name, "exercises.ex")
+      exercise_content = Mix.Helpers.GitHub.fetch_gh_file!(base_url, exercise_path)
+      Mix.Generator.create_file("lib/spirit/#{module_name}.ex", exercise_content)
 
-    case module_dir do
-      :not_found ->
-        {:error, :enoent}
+      tests_path = Path.join(module_name, "exercises_test.exs")
+      tests_content = Mix.Helpers.GitHub.fetch_gh_file!(base_url, tests_path)
+      Mix.Generator.create_file("test/spirit/#{module_name}_test.exs", tests_content)
 
-      dir ->
-        Mix.Helpers.GitHub.download_content_object!(dir)
-        {:ok, :fetched}
+      {:ok, :fetched}
     end
   end
 
-  defp find_next_module(available_modules) do
-    saved_modules =
-      case File.ls("lib/spirit") do
-        {:error, :enoent} -> []
-        {:ok, file_list} -> Enum.map(file_list, fn file -> String.trim_trailing(file, ".ex") end)
-      end
+  defp find_next_module(module_list) do
+    base_dir = "lib/spirit"
+    File.mkdir_p!(base_dir)
 
-    Enum.find(available_modules, :complete, fn module -> module not in saved_modules end)
+    saved_modules =
+      Enum.flat_map(File.ls!(base_dir), fn dir ->
+        subdirs = Path.join(base_dir, dir) |> File.ls!()
+
+        Enum.map(subdirs, fn file_name ->
+          module_name = String.trim_trailing(file_name, ".ex")
+          dir <> "/" <> module_name
+        end)
+      end)
+
+    Enum.find(module_list, :complete, fn module -> module not in saved_modules end)
   end
 
   defp startup_sequence() do
