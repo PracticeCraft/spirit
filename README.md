@@ -1,7 +1,7 @@
 # Spirit 💧
 
-A series of exercises for Elixir newcomers to practice with language basics and
-local development.
+Elixir exercises for newcomers to practice with language basics and local
+development. 
 
 ## Why?
 
