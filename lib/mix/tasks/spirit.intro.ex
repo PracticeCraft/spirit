@@ -15,8 +15,8 @@ defmodule Mix.Tasks.Spirit.Intro do
     1. Read one of the guides
        (e.g., Basic Types: https://hexdocs.pm/elixir/basic-types.html)
 
-    2. Generate the exercises and tests using the Mix task `spirit.gen`
-       (e.g., `mix spirit.gen basic_types`)
+    2. Generate the exercises and tests using the `spirit.gen` Mix task
+       (e.g., `mix spirit.gen`)
 
     3. Solve the exercises in the generated module
 
